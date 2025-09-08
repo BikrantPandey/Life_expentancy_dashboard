@@ -13,6 +13,8 @@ except FileNotFoundError:
 # Load the original data to get the list of regions for one-hot encoding
 try:
     df_original = pd.read_csv('Life_Expectancy_Data.csv')
+    # Drop the 'Country' column from the reference DataFrame, as it's not a predictor.
+    df_original = df_original.drop('Country', axis=1)
     regions = sorted(df_original['Region'].unique())
 except FileNotFoundError:
     st.error("Error: 'Life_Expectancy_Data.csv' not found. This is needed for the dashboard to function.")
