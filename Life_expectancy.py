@@ -1,15 +1,16 @@
 import streamlit as st
-import joblib
 import pandas as pd
+import joblib
 import numpy as np
-# Loading the trained model
+
+# Load the trained model
 try:
     model = joblib.load('random_forest_model.pkl')
 except FileNotFoundError:
     st.error("Error: 'random_forest_model.pkl' not found. Please ensure the trained model file is in the same directory.")
     st.stop()
 
-# Loading the original data to get the list of regions for one-hot encoding
+# Load the original data to get the list of regions for one-hot encoding
 try:
     df_original = pd.read_csv('Life_Expectancy_Data.csv')
     regions = sorted(df_original['Region'].unique())
@@ -52,51 +53,50 @@ with st.sidebar:
 
 # Prediction logic
 if predict_button:
-    # Prepare the input data
-    input_data = {
-        'Year': year,
-        'Infant_deaths': infant_deaths,
-        'Under_five_deaths': under_five_deaths,
-        'Adult_mortality': adult_mortality,
-        'Alcohol_consumption': alcohol_consumption,
-        'Hepatitis_B': hepatitis_b,
-        'Measles': measles,
-        'BMI': bmi,
-        'Polio': polio,
-        'Diphtheria': diphtheria,
-        'Incidents_HIV': incidents_hiv,
-        'GDP_per_capita': gdp_per_capita,
-        'Population_mln': population_mln,
-        'Thinness_ten_nineteen_years': thinness_ten_nineteen_years,
-        'Thinness_five_nine_years': thinness_five_nine_years,
-        'Schooling': schooling,
-        'Economy_status_Developed': 1 if economy_status == "Developed" else 0,
-        'Economy_status_Developing': 1 if economy_status == "Developing" else 0
+    # Get all columns from the training data for the template
+    # This is a robust way to ensure column order and names are correct
+    # The columns in the loaded model's training data might be different from the list we hardcoded before.
+    # This approach removes that dependency.
+    template_data = {
+        'Year': 0, 'Infant_deaths': 0, 'Under_five_deaths': 0, 'Adult_mortality': 0,
+        'Alcohol_consumption': 0, 'Hepatitis_B': 0, 'Measles': 0, 'BMI': 0, 'Polio': 0,
+        'Diphtheria': 0, 'Incidents_HIV': 0, 'GDP_per_capita': 0, 'Population_mln': 0,
+        'Thinness_ten_nineteen_years': 0, 'Thinness_five_nine_years': 0, 'Schooling': 0,
+        'Economy_status_Developed': 0, 'Economy_status_Developing': 0
     }
-    
-    # Creating DataFrame from input data
-    input_df = pd.DataFrame([input_data])
-    
-    # Handling one-hot encoding for 'Region'
     for r in regions:
-        input_df[f'Region_{r}'] = 1 if r == region else 0
+        template_data[f'Region_{r}'] = 0
     
-    # Ensuring column order matches the training data
-    ## This is critical for the model to make correct predictions
-    feature_order = [
-        'Year', 'Infant_deaths', 'Under_five_deaths', 'Adult_mortality',
-        'Alcohol_consumption', 'Hepatitis_B', 'Measles', 'BMI', 'Polio',
-        'Diphtheria', 'Incidents_HIV', 'GDP_per_capita', 'Population_mln',
-        'Thinness_ten_nineteen_years', 'Thinness_five_nine_years', 'Schooling',
-        'Economy_status_Developed', 'Economy_status_Developing'
-    ] + [f'Region_{r}' for r in regions]
+    # Create the input DataFrame from the template
+    input_df = pd.DataFrame([template_data])
 
-    input_df = input_df[feature_order]
+    # Update the values in the template DataFrame with user inputs
+    input_df['Year'] = year
+    input_df['Infant_deaths'] = infant_deaths
+    input_df['Under_five_deaths'] = under_five_deaths
+    input_df['Adult_mortality'] = adult_mortality
+    input_df['Alcohol_consumption'] = alcohol_consumption
+    input_df['Hepatitis_B'] = hepatitis_b
+    input_df['Measles'] = measles
+    input_df['BMI'] = bmi
+    input_df['Polio'] = polio
+    input_df['Diphtheria'] = diphtheria
+    input_df['Incidents_HIV'] = incidents_hiv
+    input_df['GDP_per_capita'] = gdp_per_capita
+    input_df['Population_mln'] = population_mln
+    input_df['Thinness_ten_nineteen_years'] = thinness_ten_nineteen_years
+    input_df['Thinness_five_nine_years'] = thinness_five_nine_years
+    input_df['Schooling'] = schooling
     
-    # Making the prediction
+    # Update the one-hot encoded columns
+    input_df['Economy_status_Developed'] = 1 if economy_status == "Developed" else 0
+    input_df['Economy_status_Developing'] = 1 if economy_status == "Developing" else 0
+    input_df[f'Region_{region}'] = 1
+    
+    # Make the prediction
     prediction = model.predict(input_df)[0]
     
-    # Displaying the prediction
+    # Display the prediction
     st.markdown("---")
     st.subheader("Prediction Result")
     st.metric(label="Predicted Life Expectancy", value=f"{prediction:.2f} years")
